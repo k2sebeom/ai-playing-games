@@ -3,7 +3,6 @@ import random
 import time
 from typing import Dict
 from pydantic import BaseModel
-from loguru import logger
 from .base_agent import BaseAgent
 from .judge_agent import JudgeAgent
 
@@ -18,6 +17,22 @@ class RoundResult(BaseModel):
     group_won: bool
 
 
+def print_box(text: str, width: int = 60, padding: int = 1):
+    """Print text in a decorative box."""
+    horizontal_border = "+" + "-" * (width + padding * 2) + "+"
+    empty_line = "|" + " " * (width + padding * 2) + "|"
+    
+    print(horizontal_border)
+    print(empty_line)
+    # Handle multi-line text
+    for line in text.split('\n'):
+        padded_text = line.center(width + padding * 2)
+        print(f"|{padded_text}|")
+    print(empty_line)
+    print(horizontal_border)
+    print()
+
+
 class LiarGame:
     def __init__(self, config_path: str):
         """Initialize the game with configuration from yaml file."""
@@ -25,17 +40,17 @@ class LiarGame:
         self.players: Dict[str, BaseAgent] = {}
         self.judge: JudgeAgent = None
         self.initialize_agents()
-        logger.info("Liar Game initialized")
+        print_box("🎮 Welcome to the LIAR GAME! 🎭\nLet the deception begin!")
 
     def _load_config(self, config_path: str) -> dict:
         """Load game configuration from yaml file."""
         try:
             with open(config_path, 'r') as f:
                 config = yaml.safe_load(f)
-            logger.info("Loaded configuration file")
+            print("Configuration loaded successfully ✨")
             return config
         except Exception as e:
-            logger.error(f"Error loading config: {e}")
+            print(f"❌ Error loading config: {e}")
             raise
 
     def initialize_agents(self):
@@ -44,23 +59,30 @@ class LiarGame:
         for player_config in self.config['players']:
             name = player_config['name']
             model_id = player_config['model_id']
-            self.players[name] = BaseAgent(name, model_id)
+            language = self.config['game'].get('language', 'en-US')
+            self.players[name] = BaseAgent(name, model_id, language)
 
         # Initialize judge
-        self.judge = JudgeAgent(self.config['judge']['model_id'])
+        self.judge = JudgeAgent(self.config['judge']['model_id'], language)
         if self.config['game'].get('topic_genres'):
             self.judge.set_topic_genres(self.config['game']['topic_genres'])
 
-        logger.info(f"Initialized {len(self.players)} players and judge")
+        print_box(f"🎯 Game Setup Complete!\n{len(self.players)} clever minds will face off\nwith our mysterious judge watching closely...")
 
-    def play_round(self) -> RoundResult:
+    def play_round(self, prev_topics) -> RoundResult:
         """Play a single round of the game."""
         # Generate topics
-        main_topic, liar_topic = self.judge.generate_topic_pair()
-        
+        main_topic, liar_topic = self.judge.generate_topic_pair(prev_topics)
+        print_box(f"📚 Topics for this round:\n🌟 Main: {main_topic}\n🔮 Liar: {liar_topic}\n", width=50, padding=2)
+        prev_topics.append(main_topic)
+
         # Select liar
         liar_name = random.choice(list(self.players.keys()))
-        logger.info(f"Selected {liar_name} as the liar")
+        print("\n" + "="*60)
+        print("🎲 The dice of deception have been rolled...")
+        time.sleep(1)  # Add dramatic pause
+        print("🎭 A player has been chosen to be the LIAR... but who could it be? 🤔")
+        print("="*60 + "\n")
 
         # Track words and their order
         all_words = {}
@@ -76,18 +98,25 @@ class LiarGame:
             # Show previous words to help with context
             word, reason = player.provide_word(topic, list(all_words.values()))
             all_words[player_name] = word
-            logger.info(f"{player_name} provided word: {word}\nReason: {reason}")
-            time.sleep(5)
+            # Print game progress
+            print(f"{'😈' if player_name == liar_name else '🤔'} {player_name}'s turn...")
+            time.sleep(1)
+            print(f"   └─ Says: '{word}'")
+            print(f"   └─ 💭 Reasoning: {reason}\n")
+            # time.sleep(5)
 
         # Voting phase
         votes = {}
         for player_name, player in self.players.items():
             is_liar = player_name == liar_name
             topic = liar_topic if is_liar else main_topic
-            vote = player.vote_for_liar(all_words, topic)
+            vote, reason = player.vote_for_liar(all_words, topic)
 
             votes[player_name] = vote
-            logger.info(f"{player_name} voted for {vote}")
+            print(f"🗳️  {player_name} dramatically points at... ", end='')
+            time.sleep(0.5)  # Dramatic pause
+            print(f"{vote}! *suspenseful music*")
+            print(f"   └─ 💭 Reasoning: {reason}\n")
 
         # Calculate results
         vote_counts = {}
@@ -109,28 +138,71 @@ class LiarGame:
 
     def play_game(self):
         """Play multiple rounds of the game."""
-        logger.info("Starting Liar Game")\
+        print_box("🎭 THE ULTIMATE GAME OF DECEPTION 🎭")\
         
         results = []
+        losers = []
+        prev_topics = []
 
-        round = 1
+        round_count = 1
 
-        while len(self.players) > 1:
-            logger.info(f'Round {round} start!')
-            round_result = self.play_round()
+        while len(self.players) > 2:
+            print("\n" + "="*60)
+            print(f"🔄 Round {round_count} - Let the mind games begin! 🎯".center(60))
+            print("="*60 + "\n")
+            round_result = self.play_round(prev_topics)
             results.append(round_result)
             
             # Log round results
-            logger.info(f"\nRound {round} Results:")
-            logger.info(f"Main Topic: {round_result.main_topic}")
-            logger.info(f"Liar Topic: {round_result.liar_topic}")
-            logger.info(f"True Liar: {round_result.liar}")
-            logger.info(f"Words: {round_result.words}")
-            logger.info(f"Votes: {round_result.votes}")
-            logger.info(f"Group {'Won' if round_result.group_won else 'Lost'}")
+            # Print round results in a fancy box
+            result_text = [
+                f"🎯 Round {round_count} Results - The Truth Emerges!",
+                "",
+                f"📝 The Real Topic Was: {round_result.main_topic}",
+                f"🎭 The Liar's Secret Topic: {round_result.liar_topic}",
+                f"😈 The True Liar Was: {round_result.liar}",
+                "",
+                "🎲 The Words That Were Played:",
+            ]
+            
+            # Add words section
+            for player, word in round_result.words.items():
+                if player == round_result.liar:
+                    result_text.append(f"   • {player} (The Liar) said: '{word}'")
+                else:
+                    result_text.append(f"   • {player} said: '{word}'")
+            
+            result_text.extend([
+                "",
+                "🗳️ The Accusations:",
+            ])
+            
+            # Add voting section
+            for voter, vote in round_result.votes.items():
+                result_text.append(f"   • {voter} suspected {vote}")
+            
+            result_text.extend([
+                "",
+                "🏆 Final Verdict:",
+                "   The group has CAUGHT THE LIAR! 🎉" if round_result.group_won else "   The Liar has FOOLED EVERYONE! 😱"
+            ])
+            
+            print_box("\n".join(result_text), width=70)
 
             if round_result.group_won:
-                logger.info(f"{round_result.liar} is eliminated!")
+                print(f"\n👋 {round_result.liar} has been caught and eliminated from the game!")
+                print("="*60 + "\n")
                 self.players.pop(round_result.liar)
+                losers.append(round_result.liar)
+            else:
+                print(f"\n👋 {round_result.most_voted} has been indicted and eliminated from the game!")
+                print("="*60 + "\n")
+                self.players.pop(round_result.most_voted)
+                losers.append(round_result.most_voted)
 
+            round_count += 1
+        print("Winners")
+        print([p.name for p in self.players])
+        print("Losers")
+        print(losers[::-1])
         return results
