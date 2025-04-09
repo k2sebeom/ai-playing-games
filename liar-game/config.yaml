@@ -1,0 +1,19 @@
+game:
+  num_turns: 2  # Number of turns per round
+  num_players: 3  # Total number of players
+  topic_genres:  # List of topic genres (if empty, random topics will be used)
+    - animals
+    - countries
+    - food
+    - sports
+
+players:
+  - name: "Player 1"
+    model_id: "anthropic.claude-3-5-sonnet-20241022-v2:0"  # Bedrock model ID
+  - name: "Player 2"
+    model_id: "anthropic.claude-3-5-sonnet-20241022-v2:0"
+  - name: "Player 3"
+    model_id: "anthropic.claude-3-5-sonnet-20241022-v2:0"
+
+judge:
+  model_id: "anthropic.claude-3-5-sonnet-20241022-v2:0"  # Model ID for the judge who creates topics and manages the game

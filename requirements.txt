@@ -1,0 +1,6 @@
+langchain
+langchain-community
+boto3
+python-dotenv
+loguru
+PyYAML
