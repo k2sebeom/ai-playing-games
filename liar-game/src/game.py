@@ -1,10 +1,22 @@
 import yaml
 import random
 import time
-from typing import Dict, List
+from typing import Dict
+from pydantic import BaseModel
 from loguru import logger
 from .base_agent import BaseAgent
 from .judge_agent import JudgeAgent
+
+
+class RoundResult(BaseModel):
+    main_topic: str
+    liar_topic: str
+    liar: str
+    words: Dict[str, str]
+    votes: Dict[str, str]
+    most_voted: str
+    group_won: bool
+
 
 class LiarGame:
     def __init__(self, config_path: str):
@@ -41,7 +53,7 @@ class LiarGame:
 
         logger.info(f"Initialized {len(self.players)} players and judge")
 
-    def play_round(self) -> dict:
+    def play_round(self) -> RoundResult:
         """Play a single round of the game."""
         # Generate topics
         main_topic, liar_topic = self.judge.generate_topic_pair()
@@ -62,9 +74,9 @@ class LiarGame:
             topic = liar_topic if is_liar else main_topic
             
             # Show previous words to help with context
-            word = player.provide_word(topic, list(all_words.values()))
+            word, reason = player.provide_word(topic, list(all_words.values()))
             all_words[player_name] = word
-            logger.info(f"{player_name} provided word: {word}")
+            logger.info(f"{player_name} provided word: {word}\nReason: {reason}")
             time.sleep(5)
 
         # Voting phase
@@ -85,32 +97,40 @@ class LiarGame:
         most_voted = max(vote_counts.items(), key=lambda x: x[1])[0]
         group_won = most_voted == liar_name
 
-        return {
-            'main_topic': main_topic,
-            'liar_topic': liar_topic,
-            'liar': liar_name,
-            'words': all_words,
-            'votes': votes,
-            'most_voted': most_voted,
-            'group_won': group_won,
-        }
+        return RoundResult(
+            main_topic=main_topic,
+            liar_topic=liar_topic,
+            liar=liar_name,
+            words=all_words,
+            votes=votes,
+            most_voted=most_voted,
+            group_won=group_won,
+        )
 
-    def play_game(self, num_rounds: int = 1):
+    def play_game(self):
         """Play multiple rounds of the game."""
+        logger.info("Starting Liar Game")\
+        
         results = []
-        for round_num in range(num_rounds):
-            logger.info(f"Starting round {round_num + 1}")
+
+        round = 1
+
+        while len(self.players) > 1:
+            logger.info(f'Round {round} start!')
             round_result = self.play_round()
             results.append(round_result)
             
             # Log round results
-            logger.info(f"\nRound {round_num + 1} Results:")
-            logger.info(f"Main Topic: {round_result['main_topic']}")
-            logger.info(f"Liar Topic: {round_result['liar_topic']}")
-            logger.info(f"True Liar: {round_result['liar']}")
-            logger.info(f"Words: {round_result['words']}")
-            logger.info(f"Votes: {round_result['votes']}")
-            logger.info(f"Group {'Won' if round_result['group_won'] else 'Lost'}")
-            logger.info(f"Judge's Analysis: {round_result['analysis']}\n")
+            logger.info(f"\nRound {round} Results:")
+            logger.info(f"Main Topic: {round_result.main_topic}")
+            logger.info(f"Liar Topic: {round_result.liar_topic}")
+            logger.info(f"True Liar: {round_result.liar}")
+            logger.info(f"Words: {round_result.words}")
+            logger.info(f"Votes: {round_result.votes}")
+            logger.info(f"Group {'Won' if round_result.group_won else 'Lost'}")
+
+            if round_result.group_won:
+                logger.info(f"{round_result.liar} is eliminated!")
+                self.players.pop(round_result.liar)
 
         return results

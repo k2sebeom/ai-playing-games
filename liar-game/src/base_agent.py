@@ -14,8 +14,8 @@ class BaseAgent:
         return f"""Hi, {self.name}. You are {role} in a Liar Game. In this game, all players are given a topic except for one player (the liar) who receives a different topic.
 Players take turns providing words related to their given topic. The goal for the regular players is to identify the liar, while the liar tries to blend in without knowing the main topic.
         
-Your response should be clear and direct. When asked to choose a target, use XML tags like <target>Player Name</target>.
-When providing a descriptive word, use XML tags like <word>sunny</word>.
+Your response should be clear and direct.
+When providing requested answer, use clear XML tags like <tag_name>value</tag_name>.
 
 {context}
 
@@ -26,7 +26,6 @@ Please provide your response:"""
         prompt = self._format_prompt(role, context)
         try:
             response = self.client.invoke_model(self.model_id, prompt)
-            print(f'{prompt} -> {response}')
             logger.info(f"Agent {self.name} generated response")
             return response.strip()
         except Exception as e:
@@ -50,14 +49,15 @@ Words shared by other players: {', '.join(previous_words) if previous_words else
 Provide ONE descriptive word related to the topic. The word should not be part of the topic itself.
 
 Note that you may be a liar too! If you think you are a liar, provide a word that blends in with others.
-Use <word>your_word</word> format. Provide some thoughts on your decision too."""
+Use <word>your_word</word> format. Provide some thoughts on your decision too in <reason>thoughts</reason>"""
         
         response = self.generate_response("a player", context)
         word = self.extract_tagged_content(response, "word")
         if not word:
             logger.warning(f"Agent {self.name} provided invalid response format")
             return "invalid_response"
-        return word
+        reason = self.extract_tagged_content(response, "reason")
+        return word, reason
 
     def vote_for_liar(self, all_words: dict, topic: str) -> str:
         """Vote for who you think is the liar."""

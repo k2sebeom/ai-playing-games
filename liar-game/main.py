@@ -37,8 +37,7 @@ def main():
     try:
         # Initialize and run game
         game = LiarGame(config_path)
-        num_rounds = game.config['game'].get('num_turns', 1)
-        results = game.play_game(num_rounds)
+        results = game.play_game()
 
         # Log final statistics
         wins = sum(1 for r in results if r['group_won'])
