@@ -62,7 +62,7 @@ class LiarGame:
                 topic = liar_topic if is_liar else main_topic
                 
                 # Show previous words to help with context
-                word = player.provide_word(topic, list(all_words.values()), is_liar)
+                word = player.provide_word(topic, list(all_words.values()))
                 all_words[player_name] = word
                 logger.info(f"{player_name} provided word: {word}")
 

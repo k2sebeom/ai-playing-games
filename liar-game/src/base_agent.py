@@ -41,9 +41,9 @@ Please provide your response:"""
             return match.group(1).strip()
         return None
 
-    def provide_word(self, topic: str, previous_words: List[str], is_liar: bool) -> str:
+    def provide_word(self, topic: str, previous_words: List[str]) -> str:
         """Provide a descriptive word for the current topic."""
-        context = f"""The topic you {'think you know' if is_liar else 'know'} is: {topic}
+        context = f"""The topic is: {topic}
 Previous words used: {', '.join(previous_words) if previous_words else 'None'}
 
 Provide ONE descriptive word related to the topic. The word should not be part of the topic itself.
