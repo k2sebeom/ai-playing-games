@@ -11,12 +11,12 @@ class BaseAgent:
 
     def _format_prompt(self, role: str, context: str) -> str:
         """Format the prompt for the AI model."""
-        return f"""You are {role} in a Liar Game. {context}
+        return f"""Hi, {self.name}. You are {role} in a Liar Game. In this game, all players are given a topic except for one player (the liar) who receives a different topic.
+Players take turns providing words related to their given topic. The goal for the regular players is to identify the liar, while the liar tries to blend in without knowing the main topic.
         
-Your response should be clear and direct. When asked to choose a target, use XML tags like <target>Player 2</target>.
+Your response should be clear and direct. When asked to choose a target, use XML tags like <target>Player Name</target>.
 When providing a descriptive word, use XML tags like <word>sunny</word>.
 
-Current context:
 {context}
 
 Please provide your response:"""
@@ -26,6 +26,7 @@ Please provide your response:"""
         prompt = self._format_prompt(role, context)
         try:
             response = self.client.invoke_model(self.model_id, prompt)
+            print(f'{prompt} -> {response}')
             logger.info(f"Agent {self.name} generated response")
             return response.strip()
         except Exception as e:
@@ -44,10 +45,12 @@ Please provide your response:"""
     def provide_word(self, topic: str, previous_words: List[str]) -> str:
         """Provide a descriptive word for the current topic."""
         context = f"""The topic is: {topic}
-Previous words used: {', '.join(previous_words) if previous_words else 'None'}
+Words shared by other players: {', '.join(previous_words) if previous_words else 'None'}
 
 Provide ONE descriptive word related to the topic. The word should not be part of the topic itself.
-Use <word>your_word</word> format."""
+
+Note that you may be a liar too! If you think you are a liar, provide a word that blends in with others.
+Use <word>your_word</word> format. Provide some thoughts on your decision too."""
         
         response = self.generate_response("a player", context)
         word = self.extract_tagged_content(response, "word")
@@ -58,11 +61,13 @@ Use <word>your_word</word> format."""
 
     def vote_for_liar(self, all_words: dict, topic: str) -> str:
         """Vote for who you think is the liar."""
-        context = f"""Based on the following words provided by each player for the topic '{topic}':
+        context = f"""Now it is time to vote! Here is the list of words listed by players.:
+
+Topic: {topic}
 
 {chr(10).join([f'{player}: {word}' for player, word in all_words.items()])}
 
-Who do you think is the liar? Respond with the player name in <target>player_name</target> format."""
+Who do you think is the liar? Don't vote for yourself, and respond with the player name in <target>player_name</target> format."""
         
         response = self.generate_response("a player voting", context)
         target = self.extract_tagged_content(response, "target")

@@ -1,19 +1,25 @@
 game:
-  num_turns: 2  # Number of turns per round
-  num_players: 3  # Total number of players
-  topic_genres:  # List of topic genres (if empty, random topics will be used)
-    - animals
-    - countries
-    - food
-    - sports
+  topic_genres: [] # List of topic genres (if empty, random topics will be used)
+    # - animals
+    # - countries
+    # - food
+    # - sports
 
 players:
-  - name: "Player 1"
-    model_id: "anthropic.claude-3-5-sonnet-20241022-v2:0"  # Bedrock model ID
-  - name: "Player 2"
-    model_id: "anthropic.claude-3-5-sonnet-20241022-v2:0"
-  - name: "Player 3"
-    model_id: "anthropic.claude-3-5-sonnet-20241022-v2:0"
+  - name: "Claude 3.5 Sonnet"
+    model_id: "us.anthropic.claude-3-5-sonnet-20241022-v2:0"  # Bedrock model ID
+  - name: "Claude 3.5 Haiku"
+    model_id: "us.anthropic.claude-3-5-haiku-20241022-v1:0"
+  - name: "LLama 3.3"
+    model_id: "us.meta.llama3-3-70b-instruct-v1:0"
+  - name: "Nova Pro"
+    model_id: "us.amazon.nova-pro-v1:0"
+  - name: "Nova Lite"
+    model_id: "us.amazon.nova-lite-v1:0"
+  - name: "Claude 3.7 Sonnet"
+    model_id: "us.anthropic.claude-3-7-sonnet-20250219-v1:0"
+  - name: "Deepseek"
+    model_id: "us.deepseek.r1-v1:0"
 
 judge:
   model_id: "anthropic.claude-3-5-sonnet-20241022-v2:0"  # Model ID for the judge who creates topics and manages the game

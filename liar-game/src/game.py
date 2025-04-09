@@ -1,5 +1,6 @@
 import yaml
 import random
+import time
 from typing import Dict, List
 from loguru import logger
 from .base_agent import BaseAgent
@@ -54,27 +55,27 @@ class LiarGame:
         player_order = list(self.players.keys())
         random.shuffle(player_order)
 
-        # Each player takes turns providing words
-        for _ in range(self.config['game']['num_turns']):
-            for player_name in player_order:
-                player = self.players[player_name]
-                is_liar = player_name == liar_name
-                topic = liar_topic if is_liar else main_topic
-                
-                # Show previous words to help with context
-                word = player.provide_word(topic, list(all_words.values()))
-                all_words[player_name] = word
-                logger.info(f"{player_name} provided word: {word}")
+        # Each player provides a word for this round
+        for player_name in player_order:
+            player = self.players[player_name]
+            is_liar = player_name == liar_name
+            topic = liar_topic if is_liar else main_topic
+            
+            # Show previous words to help with context
+            word = player.provide_word(topic, list(all_words.values()))
+            all_words[player_name] = word
+            logger.info(f"{player_name} provided word: {word}")
+            time.sleep(5)
 
         # Voting phase
         votes = {}
         for player_name, player in self.players.items():
-            vote = player.vote_for_liar(all_words, main_topic)
+            is_liar = player_name == liar_name
+            topic = liar_topic if is_liar else main_topic
+            vote = player.vote_for_liar(all_words, topic)
+
             votes[player_name] = vote
             logger.info(f"{player_name} voted for {vote}")
-
-        # Get judge's analysis
-        analysis = self.judge.evaluate_round(all_words, liar_name, votes)
 
         # Calculate results
         vote_counts = {}
@@ -92,7 +93,6 @@ class LiarGame:
             'votes': votes,
             'most_voted': most_voted,
             'group_won': group_won,
-            'analysis': analysis
         }
 
     def play_game(self, num_rounds: int = 1):

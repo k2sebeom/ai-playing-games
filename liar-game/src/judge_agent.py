@@ -38,31 +38,3 @@ Provide your response in this format:
             
         logger.info(f"Generated topic pair: {main_topic} (main) / {liar_topic} (liar)")
         return main_topic, liar_topic
-
-    def evaluate_round(self, all_words: dict, true_liar: str, votes: dict) -> str:
-        """Evaluate the round and provide commentary."""
-        context = f"""As the judge, evaluate this round of the Liar Game:
-
-Words provided by each player:
-{chr(10).join([f'{player}: {word}' for player, word in all_words.items()])}
-
-Votes cast:
-{chr(10).join([f'{player} voted for {vote}' for player, vote in votes.items()])}
-
-The true liar was: {true_liar}
-
-Provide an analysis of the round, including:
-1. How well the liar blended in
-2. Any particularly suspicious or clever plays
-3. The effectiveness of the group's voting
-
-Use <analysis>your_analysis</analysis> format."""
-
-        response = self.generate_response("the judge", context)
-        analysis = self.extract_tagged_content(response, "analysis")
-        
-        if not analysis:
-            logger.warning("Judge provided invalid analysis format")
-            return "Round complete."
-            
-        return analysis

@@ -21,7 +21,7 @@ class BedrockClient:
 
             # Set up inference configuration
             inference_config = {
-                "temperature": 0.7,
+                "temperature": 1,
                 "topP": 0.9
             }
 
